@@ -1,12 +1,34 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>귤송 Song List</title>
-<style>
-body{margin:0;background:#0b0b0d;color:#f7f7f8;font-family:Arial,"Noto Sans KR",sans-serif}.w{max-width:850px;margin:auto;padding:20px}.head{display:flex;gap:12px;align-items:center;margin-bottom:20px}.logo{font-size:28px;background:#ff923f;padding:10px;border-radius:14px}h1{margin:0;font-size:24px}.sub,.artist{color:#999}.hero,.song,input,.count{background:#17171b;border:1px solid #303038}.hero{padding:24px;border-radius:22px;margin-bottom:16px}.hero b{font-size:25px}.row{display:flex;gap:10px}input{flex:1;padding:15px;border-radius:15px;color:white;font-size:16px}.count{padding:15px;border-radius:15px;color:#aaa}.chips{display:flex;gap:8px;overflow:auto;margin:13px 0}.chip{border:1px solid #303038;background:#17171b;color:#ddd;border-radius:99px;padding:10px 14px;font-weight:bold;white-space:nowrap}.chip.on{background:#ff923f;color:#1a110b}.list{display:grid;gap:10px}.song{padding:17px;border-radius:18px;display:flex;justify-content:space-between;align-items:center}.title{font-size:18px;font-weight:bold}.artist{margin-top:5px;font-size:14px}.tag{font-size:12px;color:#ffd2b5}.msg{text-align:center;color:#999;padding:35px}
-</style></head><body><main class="w"><div class="head"><div class="logo">🍊</div><div><h1>귤송 Song List</h1><div class="sub">제가 부를 수 있는 노래들이에요</div></div></div><div class="hero"><b>오늘은 뭐 들을까요? 🍊</b><div class="sub">제목이나 가수 이름으로 검색해 보세요.</div></div><div class="row"><input id="q" placeholder="🔎 노래 제목 / 가수 검색"><div id="n" class="count">0곡</div></div><div id="chips" class="chips"></div><div id="msg" class="msg">노래 목록을 불러오는 중…</div><div id="list" class="list"></div></main>
-<script>
-const cats=["전체","가요","J-POP","팝송","기타곡"];let songs=[],active="전체";
-const q=document.getElementById("q"),n=document.getElementById("n"),list=document.getElementById("list"),chips=document.getElementById("chips"),msg=document.getElementById("msg");
-function e(s){let d=document.createElement("div");d.textContent=s;return d.innerHTML}
-function buttons(){chips.innerHTML="";cats.forEach(c=>{let b=document.createElement("button");b.className="chip"+(c==active?" on":"");b.textContent=c;b.onclick=()=>{active=c;buttons();draw()};chips.appendChild(b)})}
-function draw(){let x=q.value.toLowerCase();let f=songs.filter(s=>(active=="전체"||s.c==active)&&(!x||s.t.toLowerCase().includes(x)||s.a.toLowerCase().includes(x)));n.textContent=f.length+"곡";list.innerHTML="";msg.style.display=f.length?"none":"block";msg.textContent="검색 결과가 없어요 🥲";f.forEach(s=>{let d=document.createElement("div");d.className="song";d.innerHTML=`<div><div class="title">${e(s.t)}</div><div class="artist">${e(s.a)}</div></div><div class="tag">${e(s.c)}</div>`;list.appendChild(d)})}
-fetch("songs.txt?"+Date.now()).then(r=>r.text()).then(t=>{songs=t.split(/\r?\n/).map(v=>v.trim()).filter(v=>v&&!v.startsWith("#")).map(v=>{let p=v.split("|").map(z=>z.trim());return{t:p[0],a:p[1],c:p[2]}}).filter(s=>s.t&&s.a&&cats.includes(s.c));draw()}).catch(()=>{msg.textContent="songs.txt를 불러오지 못했어요."});q.oninput=draw;buttons();
-</script></body></html>
+function draw(){  
+  let x=q.value.toLowerCase();  
+  
+  let f=songs  
+    .filter(s=>  
+      (active=="전체"||s.c==active) &&  
+      (!x||  
+        s.t.toLowerCase().includes(x)||  
+        s.a.toLowerCase().includes(x)  
+      )  
+    )  
+    .sort((a,b)=>{  
+      let artistCompare=a.a.localeCompare(b.a,"ko");  
+      if(artistCompare!==0) return artistCompare;  
+  
+      return a.t.localeCompare(b.t,"ko");  
+    });  
+  
+  n.textContent=f.length+"곡";  
+  list.innerHTML="";  
+  msg.style.display=f.length?"none":"block";  
+  msg.textContent="검색 결과가 없어요 🥲";  
+  
+  f.forEach(s=>{  
+    let d=document.createElement("div");  
+    d.className="song";  
+    d.innerHTML=`<div>  
+      <div class="title">${e(s.t)}</div>  
+      <div class="artist">${e(s.a)}</div>  
+    </div>  
+    <div class="tag">${e(s.c)}</div>`;  
+    list.appendChild(d);  
+  });  
+}  
