@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>귤송 Song List</title>
-
 <style>
 body{margin:0;background:#0b0b0d;color:#f7f7f8;font-family:Arial,"Noto Sans KR",sans-serif}
 .w{max-width:850px;margin:auto;padding:20px}
@@ -29,61 +28,131 @@ input{flex:1;padding:15px;border-radius:15px;color:white;font-size:16px}
 .msg{text-align:center;color:#999;padding:35px}
 </style>
 </head>
-
 <body>
 <main class="w">
-
-<div class="head">
-  <div class="logo">🍊</div>
-  <div>
-    <h1>귤송 Song List</h1>
-    <div class="sub">제가 부를 수 있는 노래들이에요</div>
+  <div class="head">
+    <div class="logo">🍊</div>
+    <div>
+      <h1>귤송 Song List</h1>
+      <div class="sub">제가 부를 수 있는 노래들이에요</div>
+    </div>
   </div>
-</div>
 
-<div class="hero">
-  <b>오늘은 뭐 들을까요? 🍊</b>
-  <div class="sub">제목이나 가수 이름으로 검색해 보세요.</div>
-</div>
+  <div class="hero">
+    <b>오늘은 뭐 들을까요? 🍊</b>
+    <div class="sub">제목이나 가수 이름으로 검색해 보세요.</div>
+  </div>
 
-<div class="row">
-  <input id="q" placeholder="🔎 노래 제목 / 가수 검색">
-  <div id="n" class="count">0곡</div>
-</div>
+  <div class="row">
+    <input id="q" placeholder="🔎 노래 제목 / 가수 검색">
+    <div id="n" class="count">0곡</div>
+  </div>
 
-<div id="chips" class="chips"></div>
-<div id="msg" class="msg">노래 목록을 불러오는 중…</div>
-<div id="list" class="list"></div>
-
+  <div id="chips" class="chips"></div>
+  <div id="msg" class="msg">노래 목록을 불러오는 중…</div>
+  <div id="list" class="list"></div>
 </main>
 
 <script>
-const cats=["전체","가요","J-POP","팝송","기타곡"];
-let songs=[];
-let active="전체";
+const cats = ["전체","가요","J-POP","팝송","기타곡"];
+let songs = [];
+let active = "전체";
 
-const q=document.getElementById("q");
-const n=document.getElementById("n");
-const list=document.getElementById("list");
-const chips=document.getElementById("chips");
-const msg=document.getElementById("msg");
+const q = document.getElementById("q");
+const n = document.getElementById("n");
+const list = document.getElementById("list");
+const chips = document.getElementById("chips");
+const msg = document.getElementById("msg");
 
-function e(s){
-  let d=document.createElement("div");
-  d.textContent=s;
+function esc(s){
+  const d = document.createElement("div");
+  d.textContent = s || "";
   return d.innerHTML;
 }
 
-function buttons(){
-  chips.innerHTML="";
-  cats.forEach(c=>{
-    let b=document.createElement("button");
-    b.className="chip"+(c==active?" on":"");
-    b.textContent=c;
-    b.onclick=()=>{
-      active=c;
-      buttons();
+function makeButtons(){
+  chips.innerHTML = "";
+  cats.forEach(function(c){
+    const b = document.createElement("button");
+    b.className = "chip" + (c === active ? " on" : "");
+    b.textContent = c;
+    b.addEventListener("click", function(){
+      active = c;
+      makeButtons();
       draw();
-    };
+    });
     chips.appendChild(b);
- 
+  });
+}
+
+function draw(){
+  const x = q.value.toLowerCase();
+
+  const filtered = songs
+    .filter(function(s){
+      const categoryOK = active === "전체" || s.c === active;
+      const searchOK =
+        !x ||
+        s.t.toLowerCase().includes(x) ||
+        s.a.toLowerCase().includes(x);
+      return categoryOK && searchOK;
+    })
+    .sort(function(a,b){
+      const byArtist = a.a.localeCompare(b.a, "ko");
+      if(byArtist !== 0) return byArtist;
+      return a.t.localeCompare(b.t, "ko");
+    });
+
+  n.textContent = filtered.length + "곡";
+  list.innerHTML = "";
+
+  if(filtered.length === 0){
+    msg.style.display = "block";
+    msg.textContent = songs.length ? "검색 결과가 없어요 🥲" : "노래 목록이 비어 있어요.";
+  } else {
+    msg.style.display = "none";
+  }
+
+  filtered.forEach(function(s){
+    const d = document.createElement("div");
+    d.className = "song";
+    d.innerHTML =
+      '<div><div class="title">' + esc(s.t) +
+      '</div><div class="artist">' + esc(s.a) +
+      '</div></div><div class="tag">' + esc(s.c) + '</div>';
+    list.appendChild(d);
+  });
+}
+
+makeButtons();
+
+fetch("./songs.txt?ts=" + Date.now(), {cache:"no-store"})
+  .then(function(r){
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    return r.text();
+  })
+  .then(function(text){
+    songs = text
+      .split(/\r?\n/)
+      .map(function(v){ return v.trim(); })
+      .filter(function(v){ return v && !v.startsWith("#"); })
+      .map(function(v){
+        const p = v.split("|").map(function(z){ return z.trim(); });
+        return {t:p[0] || "", a:p[1] || "", c:p[2] || ""};
+      })
+      .filter(function(s){
+        return s.t && s.a && cats.includes(s.c);
+      });
+
+    draw();
+  })
+  .catch(function(err){
+    console.error(err);
+    msg.style.display = "block";
+    msg.textContent = "songs.txt를 불러오지 못했어요.";
+  });
+
+q.addEventListener("input", draw);
+</script>
+</body>
+</html>
